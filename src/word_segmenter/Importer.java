@@ -7,6 +7,7 @@ import java.io.*;
 
 import cc.mallet.pipe.*;
 import cc.mallet.pipe.iterator.*;
+import cc.mallet.pipe.tsf.*;
 import cc.mallet.types.*;
 
 
@@ -19,65 +20,29 @@ public class Importer {
 	{
 		pipe = buildPipe();
 	}
+	
+	public Pipe getPipe(){
+		return pipe;
+	}
 
+	
 	private Pipe buildPipe()
 	{
 		ArrayList<Pipe> pipeList = new ArrayList<Pipe>();
 	
-		// Read data from File objects
         pipeList.add(new Input2CharSequence("UTF-8"));
+        pipeList.add(new SimpleTaggerSentence2TokenSequence());
 
-        // Regular expression for what constitutes a token.
-        //  This pattern includes Unicode letters, Unicode numbers, 
-        //   and the underscore character. Alternatives:
-        //    "\\S+"   (anything not whitespace)
-        //    "\\w+"    ( A-Z, a-z, 0-9, _ )
-        //    "[\\p{L}\\p{N}_]+|[\\p{P}]+"   (a group of only letters and numbers OR
-        //                                    a group of only punctuation marks)
-        Pattern tokenPattern = Pattern.compile("[\\p{L}\\p{N}_]+");
-
-        // Tokenize raw strings
-        pipeList.add(new CharSequence2TokenSequence(tokenPattern));
-
-        // Normalize all tokens to all lowercase
-        pipeList.add(new TokenSequenceLowercase());
-
-        // Remove stopwords from a standard English stoplist.
-        //  options: [case sensitive] [mark deletions]
-        pipeList.add(new TokenSequenceRemoveStopwords(false, false));
-
-        // Rather than storing tokens as strings, convert 
-        //  them to integers by looking them up in an alphabet.
-        pipeList.add(new TokenSequence2FeatureSequence());
-
-        // Do the same thing for the "target" field: 
-        //  convert a class label string to a Label object,
-        //  which has an index in a Label alphabet.
-        pipeList.add(new Target2Label());
-
-        // Now convert the sequence of features to a sparse vector,
-        //  mapping feature IDs to counts.
-        pipeList.add(new FeatureSequence2FeatureVector());
-
-        // Print out the features and the label
-        //pipeList.add(new PrintInputAndTarget());
-
+        int[][]conjunctions = new int[2][];
+        conjunctions[0] = new int[] {-1};
+        conjunctions[1] = new int[] {1};
+        pipeList.add(new OffsetConjunctions(conjunctions));
+        
+        pipeList.add(new TokenSequence2FeatureVectorSequence());
         return new SerialPipes(pipeList);
 	}
 	
-	public InstanceList readFile(String filename){
-		return readDirectory (new File(filename));
-	}
-
-	public InstanceList readDirectory(String dirname){
-		return readDirectory (new File(dirname));
-	}
-
-	public InstanceList readDirectory(File directory) {
-        return readDirectories(new File[] {directory});
-    }
-
-    public InstanceList readDirectories(File[] directories) {
+	public InstanceList readFile(String filename) throws IOException{
         
         // Construct a file iterator, starting with the 
         //  specified directories, and recursing through subdirectories.
@@ -87,11 +52,10 @@ public class Importer {
         //   filename to produce a class label. In this case, I've 
         //   asked it to use the last directory name in the path.
        
-    	FileIterator iterator =
-            new FileIterator(directories,
-                             new TxtFilter(),
-                             FileIterator.LAST_DIRECTORY);
-                             
+    	File file = new File(filename);
+        Reader input = new FileReader(file);
+        Pattern separator = Pattern.compile("^\\s*$");
+    	LineGroupIterator iterator = new LineGroupIterator(input, separator, true);
 
         // Construct a new instance list, passing it the pipe
         //  we want to use to process instances.
