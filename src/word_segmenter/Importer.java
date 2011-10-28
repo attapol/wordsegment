@@ -38,6 +38,8 @@ public class Importer {
         conjunctions[1] = new int[] {1};
         pipeList.add(new OffsetConjunctions(conjunctions));
         
+        // need to add OffsetFeatureConjunction
+        
         pipeList.add(new TokenSequence2FeatureVectorSequence());
         return new SerialPipes(pipeList);
 	}
