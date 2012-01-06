@@ -30,16 +30,17 @@ public class Importer {
 	{
 		ArrayList<Pipe> pipeList = new ArrayList<Pipe>();
 	
-        pipeList.add(new Input2CharSequence("UTF-8"));
+  //      pipeList.add(new Input2CharSequence());
         pipeList.add(new SimpleTaggerSentence2TokenSequence());
 
-        int[][]conjunctions = new int[2][];
-        conjunctions[0] = new int[] {-1};
-        conjunctions[1] = new int[] {1};
+        int halfWindowSize = 10;
+        int[][]conjunctions = new int[halfWindowSize*2][];
+        for (int i = 0; i < halfWindowSize; i++){
+        	conjunctions[i] = new int[] {i+1};
+        	conjunctions[i + halfWindowSize] = new int[] {-(i+1)};
+        }
+        
         pipeList.add(new OffsetConjunctions(conjunctions));
-        
-        // need to add OffsetFeatureConjunction
-        
         pipeList.add(new TokenSequence2FeatureVectorSequence());
         return new SerialPipes(pipeList);
 	}
@@ -56,6 +57,7 @@ public class Importer {
        
     	File file = new File(filename);
         Reader input = new FileReader(file);
+        
         Pattern separator = Pattern.compile("^\\s*$");
     	LineGroupIterator iterator = new LineGroupIterator(input, separator, true);
 
@@ -69,17 +71,5 @@ public class Importer {
         return instances;
     }
     
-    /** This class illustrates how to build a simple file filter */
-    class TxtFilter implements FileFilter {
-
-        /** Test whether the string representation of the file 
-         *   ends with the correct extension. Note that {@ref FileIterator}
-         *   will only call this filter if the file is not a directory,
-         *   so we do not need to test that it is a file.
-         */
-        public boolean accept(File file) {
-            return file.toString().endsWith(".txt");
-        }
-    }
 
 }
