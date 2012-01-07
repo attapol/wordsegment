@@ -61,13 +61,19 @@ public class PosTagger{
 		crftrainer.setGaussianPriorVariance(10.0);
 	*/	
 		HMM hmm = new HMM(pipe, null);
-		hmm.addStatesForThreeQuarterLabelsConnectedAsIn(trainingSet);		
-		HMMTrainerByLikelihood hmmtrainer = new HMMTrainerByLikelihood(hmm);
+		hmm.addStatesForThreeQuarterLabelsConnectedAsIn(trainingSet);
+		hmm.train(trainingSet);
 		
-		TransducerTrainer trainer = hmmtrainer;
-		trainer.addEvaluator(new PerClassAccuracyEvaluator(testSet, "testing"));
-		trainer.addEvaluator(new TokenAccuracyEvaluator(testSet, "testing"));
-		trainer.train(trainingSet,2);
+		HMMTrainerByLikelihood trainer = new HMMTrainerByLikelihood(hmm);
+		TransducerEvaluator evaluator = new PerClassAccuracyEvaluator(testSet, "POS tagging");
+		evaluator.evaluate(trainer);
+		evaluator = new TokenAccuracyEvaluator(testSet, "POS tagging");
+		evaluator.evaluate(trainer);
+		
+		
+		//trainer.addEvaluator(new PerClassAccuracyEvaluator(testSet, "testing"));
+	//	trainer.addEvaluator(new TokenAccuracyEvaluator(testSet, "testing"));
+		//trainer.train(trainingSet,2);
 		
 		
 
